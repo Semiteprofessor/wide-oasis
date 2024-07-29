@@ -1,33 +1,43 @@
-import styled from "styled-components";
-import Logout from "../features/authentication/Logout";
-import ButtonIcon from "./ButtonIcon";
-import { HiOutlineUser } from "react-icons/hi2";
-import { useNavigate } from "react-router-dom";
-import DarkModeToggle from "./DarkModeToggle";
+import { createContext, useContext, useEffect } from "react";
+import { useLocalStorageState } from "../hooks/useLocalStorageState";
 
-const StyledHeaderMenu = styled.ul`
-  display: flex;
-  gap: 0.4rem;
-`;
+const DarkModeContext = createContext();
 
-function HeaderMenu() {
-  const navigate = useNavigate();
+function DarkModeProvider({ children }) {
+  const [isDarkMode, setIsDarkMode] = useLocalStorageState(
+    window.matchMedia("(prefers-color-scheme: dark)").matches,
+    "isDarkMode"
+  );
+
+  useEffect(
+    function () {
+      if (isDarkMode) {
+        document.documentElement.classList.add("dark-mode");
+        document.documentElement.classList.remove("light-mode");
+      } else {
+        document.documentElement.classList.add("light-mode");
+        document.documentElement.classList.remove("dark-mode");
+      }
+    },
+    [isDarkMode]
+  );
+
+  function toggleDarkMode() {
+    setIsDarkMode((isDark) => !isDark);
+  }
 
   return (
-    <StyledHeaderMenu>
-      <li>
-        <ButtonIcon onClick={() => navigate("/account")}>
-          <HiOutlineUser />
-        </ButtonIcon>
-      </li>
-      <li>
-        <DarkModeToggle />
-      </li>
-      <li>
-        <Logout />
-      </li>
-    </StyledHeaderMenu>
+    <DarkModeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+      {children}
+    </DarkModeContext.Provider>
   );
 }
 
-export default HeaderMenu;
+function useDarkMode() {
+  const context = useContext(DarkModeContext);
+  if (context === undefined)
+    throw new Error("DarkModeContext was used outside of DarkModeProvider");
+  return context;
+}
+
+export { DarkModeProvider, useDarkMode };
